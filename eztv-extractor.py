@@ -9,13 +9,13 @@ from hashlib import md5
 import requests
 from pyquery import PyQuery as pq
 
-CONFIG_FILE = 'sss.cfg'
+CONFIG_FILE = 'eztv-extractor.cfg'
 EZTV_URL = ('https://ezrss.it/search/index.php?'
             'show_name=%(name)s&show_name_exact=true'
             '&date=&quality=&release_group=&mode=rss')
 EZTV_PATTERN = re.compile(r'S(?P<season>\d+)E(?P<episode>\d+) (?P<data>.+)-(?P<group>[\d\w]+) \((?P<size>\d+.\d+) (?P<sunit>\w+)\)$')
 MAGNET_PATTERN = re.compile(r'magnet:\?xt=urn:btih:(?P<hash>[A-Z0-9]+)&')
-TORRENT_WATCH_DIR = './deluge/watch/'
+TORRENT_WATCH_DIR = '../deluge/watch/'
 
 def create_magnet_file(magnet_url):
     magnet_file = 'meta-%s.torrent' % MAGNET_PATTERN.search(magnet_url).group('hash')
@@ -66,8 +66,6 @@ def eztv_scrapper(url, last_season, last_episode, magnet=False,
             (notmatch and notmatch in data)):
             continue
 
-        print "foo", magnet
-
         if magnet:
             magnet_url = items[i+2].find_class('magnet')[0].values()[0]
             create_magnet_file(magnet_url)
@@ -94,7 +92,7 @@ def main():
         magnet = config.get(section, 'magnet') == True
         season, episode = eztv_scrapper(eztv_uri, last_season, last_episode,
                                         magnet, match, notmatch)
-       update_config(section, season, episode)
+        update_config(section, season, episode)
 
 if __name__ == '__main__':
     config = ConfigParser.SafeConfigParser()
