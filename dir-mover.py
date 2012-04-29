@@ -12,11 +12,18 @@ def main():
     for f in os.listdir(COMPLETE_DIR):
         name, season, episode = FILENAME_PATTERN.search(f).groups()
         name = name.replace('.', ' ').strip()
-        path = os.path.join(MOVE_TO, name, 'Season %02d' % int(season))
-        if not os.path.exists(path):
-            os.makedirs(path)
-        if not os.path.exists(os.path.join(path, f)):
-            shutil.copy(os.path.join(COMPLETE_DIR, f), path)
+
+        dir_path = os.path.join(MOVE_TO, name, 'Season %02d' % int(season))
+        full_path = os.path.join(dir_path, f)
+        source_path = os.path.join(COMPLETE_DIR, f)
+
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+
+        if not os.path.exists(full_path):
+            shutil.copy(source_path, full_path)
+            os.unlink(source_path)
+            os.symlink(full_path, source_path)
 
 if __name__ == "__main__":
     main()
