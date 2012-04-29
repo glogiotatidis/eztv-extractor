@@ -13,8 +13,10 @@ def main():
         name, season, episode = FILENAME_PATTERN.search(f).groups()
         name = name.replace('.', ' ').strip()
         path = os.path.join(MOVE_TO, name, 'Season %02d' % int(season))
-        os.makedirs(path)
-        shutil.copy(os.path.join(COMPLETE_DIR, f), path)
+        if not os.path.exists(path):
+            os.makedirs(path)
+        if not os.path.exists(os.path.join(path, f)):
+            shutil.copy(os.path.join(COMPLETE_DIR, f), path)
 
 if __name__ == "__main__":
     main()
