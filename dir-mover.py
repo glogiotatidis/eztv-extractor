@@ -21,8 +21,7 @@ def main():
             os.makedirs(dir_path)
 
         if not os.path.exists(full_path):
-            shutil.copy(source_path, full_path)
-            os.unlink(source_path)
+            shutil.move(source_path, full_path)
             os.symlink(full_path, source_path)
 
 if __name__ == "__main__":
