@@ -117,7 +117,7 @@ def main():
         magnet = config.get(section, 'magnet') == True
         season, episode = eztv_scrapper(eztv_uri, last_season, last_episode,
                                         magnet, match, notmatch)
-       update_config(section, season, episode)
+        update_config(section, season, episode)
 
 if __name__ == '__main__':
     config = ConfigParser.SafeConfigParser()
