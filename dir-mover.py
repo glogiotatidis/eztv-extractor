@@ -18,7 +18,7 @@ def main():
         source_path = os.path.join(COMPLETE_DIR, f)
 
         if not os.path.exists(dir_path):
-            os.makedirs(dir_path)
+            os.makedirs(dir_path, 0777)
 
         if not os.path.exists(full_path):
             shutil.move(source_path, full_path)
