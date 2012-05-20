@@ -6,12 +6,21 @@ import shutil
 
 COMPLETE_DIR = os.path.expanduser('~/deluge/complete')
 MOVE_TO = os.path.expanduser('~/deluge/ready')
-FILENAME_PATTERN = re.compile(r'^(?P<name>.+)S(?P<season>\d+)E(?P<episode>\d+)')
+FILENAME_PATTERN = re.compile(r'^(?P<name>.+)[Ss](?P<season>\d+)[Ee](?P<episode>\d+)')
+FILENAME_PATTERN2 = re.compile(r'^(?P<name>.+).(?P<season>\d+)x(?P<episode>\d+)')
 
 def main():
     for f in os.listdir(COMPLETE_DIR):
-        name, season, episode = FILENAME_PATTERN.search(f).groups()
-        name = name.replace('.', ' ').strip()
+        try:
+            name, season, episode = FILENAME_PATTERN.search(f).groups()
+        except AttributeError:
+            try:
+                name, season, episode = FILENAME_PATTERN2.search(f).groups()
+            except AttributeError:
+                print "Cannot parse", f
+                pass
+
+        name = name.replace('.', ' ').replace('_', ' ').strip().title()
 
         dir_path = os.path.join(MOVE_TO, name, 'Season %02d' % int(season))
         full_path = os.path.join(dir_path, f)
