@@ -68,9 +68,11 @@ def eztv_scrapper(url, last_season, last_episode, magnet=False,
         episode = int(episode)
         size = float(size)
 
-        if max_season <= season:
+        if max_season == season:
+            max_episode = max(episode, max_episode)
+        elif max_season <= season:
             max_season = season
-            max_episode = max(max_episode, episode)
+            max_episode = episode
 
         if ((season < last_season) or
             (season == last_season and episode <= last_episode) or
