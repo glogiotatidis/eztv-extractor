@@ -3,8 +3,6 @@
 import ConfigParser
 import re
 import os
-from urllib import quote
-from hashlib import md5
 
 import requests
 from pyquery import PyQuery as pq
@@ -30,6 +28,9 @@ def fetch_torrent(torrent_url):
     r = requests.get(torrent_url)
 
     if r.status_code != 200:
+        raise DownloadError
+
+    if r.content[0:3] != 'd8:':
         raise DownloadError
 
     try:
