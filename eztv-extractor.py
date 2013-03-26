@@ -3,6 +3,7 @@
 import ConfigParser
 import re
 import os
+import md5
 
 import requests
 from pyquery import PyQuery as pq
@@ -33,8 +34,9 @@ def fetch_torrent(torrent_url):
     if r.content[0:3] != 'd8:':
         raise DownloadError
 
+    filename = os.path.join(TORRENT_WATCH_DIR, '%s.torrent' % md5(torrent_file).hexdigest())
     try:
-        with open(os.path.join(TORRENT_WATCH_DIR, torrent_file), 'w') as f:
+        with open(filename, 'wb') as f:
             f.write(r.content)
     except IOError:
         raise DownloadError
