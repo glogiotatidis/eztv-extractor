@@ -3,7 +3,7 @@
 import ConfigParser
 import re
 import os
-import md5
+from hashlib import md5
 
 import requests
 from pyquery import PyQuery as pq
