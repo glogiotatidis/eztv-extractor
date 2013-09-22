@@ -1,10 +1,11 @@
 [Configuration]
-download_dir = /tmp/
+transmission_host = 
+transmission_port = 9091
 
 [The Big Bang Theory]
 eztv_uri = https://eztv.it/shows/23/the-big-bang-theory/
 season = 5
 episode = 20
-match = HDTV
-notmatch = 720
-magnet = False
+match = 
+notmatch =
+

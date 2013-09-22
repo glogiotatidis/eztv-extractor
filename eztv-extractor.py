@@ -1,106 +1,52 @@
-#!/usr/bin/env python
-# http://www.stabellini.net/rtorrent-howto.txt
 import ConfigParser
 import re
-import os
-from hashlib import md5
-
 import requests
 from pyquery import PyQuery as pq
+import transmissionrpc
 
 CONFIG_FILE = 'eztv-extractor.cfg'
-EZTV_PATTERN = re.compile(R'S(?P<season>\d+)E(?P<episode>\d+) (?P<data>.+)-(?P<group>[\d\w]+) \((?P<size>\d+.\d+) (?P<sunit>\w+)\)$')
-EZTV_PATTERN1 = re.compile(r'(?P<season>\d+)x(?P<episode>\d+) \((?P<data>.+)-(?P<group>[\d\w]+)\) .+ \((?P<size>\d+.\d+) (?P<sunit>\w+)\)$')
-MAGNET_PATTERN = re.compile(r'magnet:\?xt=urn:btih:(?P<hash>[A-Z0-9]+)&')
-TORRENT_DOWNLOAD_DIR = None
+REGEX = re.compile('.+ ((S(\d{2})E(\d{2}))|((\d{1,2})x(\d{1,2}))) (.+)')
 
-class DownloadError(Exception):
-    pass
 
-def create_magnet_file(magnet_url):
-    magnet_file = 'meta-%s.torrent' % MAGNET_PATTERN.search(magnet_url).group('hash')
-    with open(os.path.join(TORRENT_WATCH_DIR, magnet_file), 'w') as f:
-        bencoded_magnet = 'd10:magnet-uri%(length)s:%(uri)se' % {'length': len(magnet_url),
-                                                                 'uri': magnet_url}
-        f.write(bencoded_magnet)
+def eztv_scrapper(url, current_season, current_episode, match, notmatch, tc=None):
+    response = requests.get(url)
+    dd = pq(response.content)
 
-def fetch_torrent(torrent_url):
-    _, torrent_file = torrent_url.rsplit('/', 1)
-    r = requests.get(torrent_url)
-
-    if r.status_code != 200:
-        raise DownloadError
-
-    if r.content[0:3] != 'd8:':
-        raise DownloadError
-
-    filename = os.path.join(TORRENT_WATCH_DIR, '%s.torrent' % md5(torrent_file).hexdigest())
-    try:
-        with open(filename, 'wb') as f:
-            f.write(r.content)
-    except IOError:
-        raise DownloadError
-
-def eztv_scrapper(url, last_season, last_episode, magnet=False,
-                  match=None, notmatch=None):
-    max_season = last_season
-    max_episode = last_episode
-
-    r = requests.get(url)
-    d = pq(r.content)
-
-    items = d(".forum_thread_post")
-
-    i = -4
-    while True:
-        i += 4
-        if i == len(items):
-            break
-
+    for link in reversed(dd('a.epinfo')):
+        title = link.attrib['title']
         try:
-            season, episode, data, group, size, sunit =\
-                    EZTV_PATTERN.search(items[i+1].find('a').values()[1]).groups()
-        except AttributeError:
-            try:
-                season, episode, data, group, size, sunit =\
-                        EZTV_PATTERN1.search(items[i+1].find('a').values()[1]).groups()
-            except:
-                continue
+            matches = REGEX.match(title).groups()
+        except:
+            # probably something special, let's just downloadit
+            magnet = link.getparent().getnext().getchildren()[0].attrib['href']
+            if tc:
+                tc.add_torrent(magnet)
+            continue
+
+        if matches[2]:
+            season, episode = matches[2:4]
+        else:
+            season, episode = matches[5:7]
 
         season = int(season)
         episode = int(episode)
-        size = float(size)
+        extra = matches[7]
 
-        if max_season == season:
-            max_episode = max(episode, max_episode)
-        elif max_season <= season:
-            max_season = season
-            max_episode = episode
-
-        if ((season < last_season) or
-            (season == last_season and episode <= last_episode) or
-            (match and match not in data) or
+        if ((season < current_season) or
+            (season == current_season and episode <= current_episode) or
+            (match and match not in extra) or
             (notmatch and notmatch in data)):
             continue
 
-        if magnet:
-            magnet_url = items[i+2].find_class('magnet')[0].values()[0]
-            create_magnet_file(magnet_url)
-        else:
-            k = 1
-            while True:
-                torrent_url = items[i+2].find_class('download_%d' % k)
-                if len(torrent_url) == 0:
-                    # We didn't manage to find a link :(
-                    break
-                torrent_url = torrent_url[0].values()[0]
-                try:
-                    fetch_torrent(torrent_url)
-                    break
-                except DownloadError:
-                    k += 1
+        magnet = link.getparent().getnext().getchildren()[0].attrib['href']
+        if tc:
+            tc.add_torrent(magnet)
 
-    return max_season, max_episode
+        current_episode = episode
+        current_season = season
+
+    return current_season, current_episode
+
 
 def update_config(section, season, episode):
     config.set(section, 'season', str(season))
@@ -115,20 +61,21 @@ def main():
             continue
 
         eztv_uri = config.get(section, 'eztv_uri')
-        last_season = int(config.get(section, 'season'))
-        last_episode = int(config.get(section, 'episode'))
+        current_season = config.getint(section, 'season')
+        current_episode = config.getint(section, 'episode')
         match = config.get(section, 'match')
         notmatch = config.get(section, 'notmatch')
-        magnet = config.get(section, 'magnet') == True
-        season, episode = eztv_scrapper(eztv_uri, last_season, last_episode,
-                                        magnet, match, notmatch)
+        season, episode = eztv_scrapper(eztv_uri, current_season,
+                                        current_episode, match, notmatch, tc)
         update_config(section, season, episode)
+
 
 if __name__ == '__main__':
     config = ConfigParser.SafeConfigParser()
     config.read(CONFIG_FILE)
-    try:
-        TORRENT_WATCH_DIR = config.get('Configuration', 'download_dir')
-    except (ConfigParser.NoSectionError, ConfigParser.NoOptionError):
-        TORRENT_WATCH_DIR = '.'
+    host = config.get('Configuration', 'transmission_host')
+    port = config.getint('Configuration', 'transmission_port')
+    tc = None
+    if host and port:
+        tc = transmissionrpc.Client(host, port=port)
     main()
