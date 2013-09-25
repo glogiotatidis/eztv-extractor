@@ -17,10 +17,10 @@ def eztv_scrapper(url, current_season, current_episode, match, notmatch, tc=None
         try:
             matches = REGEX.match(title).groups()
         except:
-            # probably something special, let's just downloadit
-            magnet = link.getparent().getnext().getchildren()[0].attrib['href']
-            if tc:
-                tc.add_torrent(magnet)
+            # # probably something special, let's just downloadit
+            # magnet = link.getparent().getnext().getchildren()[0].attrib['href']
+            # if tc:
+            #     tc.add_torrent(magnet)
             continue
 
         if matches[2]:
