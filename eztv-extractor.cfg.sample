@@ -1,6 +1,8 @@
 [Configuration]
 transmission_host = 
 transmission_port = 9091
+complete_dir = ~/deluge/complete
+ready_dir = ~/deluge/ready
 
 [The Big Bang Theory]
 eztv_uri = https://eztv.it/shows/23/the-big-bang-theory/

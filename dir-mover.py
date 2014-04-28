@@ -4,13 +4,14 @@ import os
 import re
 import shutil
 
-COMPLETE_DIR = os.path.expanduser('~/deluge/complete')
-MOVE_TO = os.path.expanduser('~/deluge/ready')
+CONFIG_FILE = 'eztv-extractor.cfg'
 FILENAME_PATTERN = re.compile(r'^(?P<name>.+)[Ss](?P<season>\d+)[Ee](?P<episode>\d+)')
 FILENAME_PATTERN2 = re.compile(r'^(?P<name>.+).(?P<season>\d+)x(?P<episode>\d+)')
 
-def main():
-    for f in os.listdir(COMPLETE_DIR):
+
+def move_files(src_dir, dst_dir):
+    """Moves files from a source directory to a destination directory."""
+    for f in os.listdir(src_dir):
         try:
             name, season, episode = FILENAME_PATTERN.search(f).groups()
         except AttributeError:
@@ -22,9 +23,9 @@ def main():
 
         name = name.replace('.', ' ').replace('_', ' ').strip().title()
 
-        dir_path = os.path.join(MOVE_TO, name, 'Season %02d' % int(season))
+        dir_path = os.path.join(dst_dir, name, 'Season %02d' % int(season))
         full_path = os.path.join(dir_path, f)
-        source_path = os.path.join(COMPLETE_DIR, f)
+        source_path = os.path.join(src_dir, f)
 
         if not os.path.exists(dir_path):
             os.makedirs(dir_path, 0777)
@@ -33,5 +34,22 @@ def main():
             shutil.move(source_path, full_path)
             os.symlink(full_path, source_path)
 
+
+def main():
+    """Main"""
+    for section in config.sections():
+        if not section.lower() == 'configuration':
+            continue
+
+        complete = config.get(section, 'complete_dir')
+        ready = config.get(section, 'ready_dir')
+        complete_dir = os.path.expanduser(complete)
+        move_to = os.path.expanduser(ready)
+
+        move_files(complete_dir, move_to)
+
+
 if __name__ == "__main__":
+    config = ConfigParser.SafeConfigParser()
+    config.read(CONFIG_FILE)
     main()
